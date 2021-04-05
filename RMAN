@@ -198,3 +198,4 @@ remap schema -> owner도 바꿀 수 있음
 disk space check -> restore 하다가 공간 부족해야 실패메세지 떴는데 이 기능이 생긴 후 자동으로 공간을 계산해서 Cancel
 = 시간을 기다릴 필요가 없음
 
+v$nologged_block ; 로그 관련 이슈 모아둔 view
