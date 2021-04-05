@@ -128,11 +128,73 @@ Binary compression : 백업된 블록들에 대한 추가적인 compression
 unused block compression : data가 없는 블록 = 백업에서 제외 = 공간이 더 줄어들어버려 = OSB 사용할 때 동작
 allocated + data 만 백업
 
+keep forever - recover catalog database 필수 = 영속적인 보관
+자동으로 datafiles, control files, spfile, archivelog file에 대해 백업 수행
+온라인 redo 가 깨졌을 때 control file restore 
 
+set newname = 경로 바꿔주는 명령어
+switch datafile all; restore 후 맞는 이름으로 update
+일반적으로 until time을 많이 쓰고 OGG 같은 경우 logseq 많이 씀
 
+백업본을 가지고 clone db
+clone db 절차 : restore(system sysaux undo 복구해야하는 테이블스페이스 truncate datafile)
+인스턴스하나 만들어서 필요한 테이블 스페이스 저장
 
+Tablespace point in time recovery(TSPITR)
+rman > 지정한 시점으로 변경 , 설정한 공간에 system sysaux undo 할당 설정한 시점에 recover \
 
+table point in time recovery(TPITR) 꼭 알아둬 중요해 rman 중에 유용해 꼬 ㄱ알아둬 꼭꼬꼬꼬꼬꼬꼬꼭
+지정한 공간에다 system sysaux undo user datafile / datapump로 해당 테이블만 import 또는 유저, 테이블 네임, data pump용 dump file 떨구기
+ㄴ 자동으로 복구, import 등
 
+convert
+endian(big/little)
+윈도우, 리눅스 = little / 유닉스 = big
 
+Validate : default는 피지컬로 with check logical 는 로지컬로
+실제 백업을 수행하지 않고, 백업 대상이 되는 파일 Scan 및 Corruption 확인
+블록이 정상인지 아닌지 채널에 넣고 검사
 
+automatic block media recovery(ABMR)
+real-time : redo로그 버퍼에 쓸 때 그 데이터를 standby에 같이 던져서 시간을 바꿔줌
+<-> non real-time primary에서 log switch가 발생하면 current redo log만큼 갭이 생성
+read only, physical standby database
+
+block recover : 수동으로 복구
+온라인 중 완전 복구 가능
+준비물 : 백업 데이터 파일, 아카이브 로그 파일
+rman백업 아니어도 hot backup도 사용 가능
+블록 카피 = 아카이브 적용이 안됨 해당 블록은 과거 시점
+블록 리커버는 특정 블록을 백업에서 가져다가 아카이브까지 적용 == 완전 복구
+hot backup으로도 사용 가능 = catalog 명령어 = 특정 디렉토리에 있는 아카이브들을 백업인것처럼 인식시켜줌
+= recover 명령어에 사용 가능, 아카이브 모드만 가능, Enterprise Edition만 가능
+복구할 블록을 직접 지정하거나 v$database_block_corruption을 참고해서 복구 가능
+blockrecover corruption list; 전체 복구 방법
+=recover 데이터파일 n 번, 블록 x번;
+v$backup_corruption 은 히스토리 뷰라 저번에 깨졌던 뷰 들을 다 기록하고 있다..
+
+대부분 스토리지 이슈(스토리지 컨트롤러, HP카드, 서버가 나가며 스토리지 캐시 내려오는) -> 디비 외 적인 이유..!
+
+v$SESSION_LONGOPS 
+
+백업 성능을 확인할 수 있는 유일한 VIEW v$rman_backup_job_details
+input_size output_size -> 자동으로 압축되어 크기가 다를 수 있음
+output_rate -> 초당 x 만큼 받는거
+db서버에서 채널에 넣는데 걸린 시간 = input rate per sec
+
+rout ( output 메세지를 보관하는 테이블 ) -> 오류 때문에 특정 메세지가 계속해서 보관됨 = 잘못된거 truncate로 삭제하고 
+오류 나지 않도록 조치
+
+백업 실패 오류 = debug tool
+혹은 run 블록에서 debun on/off
+
+sysbackup -> 데이터 가드 어드민 = rman 명령만 쓸 수 있어 = 뷰는 되는데 select는 안 됨
+멀티섹션 : 나머지 데이터는 작고 하나가 엄청 클 때 잘라서 백업 빠르게
+듀플리케이션 : 온라인중에 데이터를 복제해서 다른 곳에 쏴주는 거 , 백업 셋 복제 = 넘기는 시간 줄어들어
+NOOPEN duplicate : 마지막 단계에 오픈이 되었었는데 mount 상태로 db 유지가 가능해진다
+-> 업그레이드 스크립트 수행하기 위해 open 대신 mount 상태
+cross platform backup : 다른 플랫폼에 마이그레이션 하기 위해 사용, 원래는 이미지 카피만 되었지만 다른 백업셋가지고 컨버젼
+remap schema -> owner도 바꿀 수 있음
+disk space check -> restore 하다가 공간 부족해야 실패메세지 떴는데 이 기능이 생긴 후 자동으로 공간을 계산해서 Cancel
+= 시간을 기다릴 필요가 없음
 
