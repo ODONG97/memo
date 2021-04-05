@@ -1,0 +1,72 @@
+recovery manager
+
+rman target /
+ㄴ 오라클 복구 하는데 사용,, recover를 어떤 command를 쓰는지 ( EE Single 에서 지원 )
+
+local site -> RAC / 기타 이슈에 의한 데이터 손실 방지 / 고가용성 ASM을 통해 미러링
+플래시백, recovery adviser 데이터 손실 복구 / 데이터 백업 RMAN
+
+OSB ( Oracle Secure Backup ) 테잎에 백업 
+넷백업 = 제일 많이 써
+
+데이터를 테이프에 백업 하는 이유
+ㄴ 용량이 크고 가격이 저렴해서 장기 보관하기 유용하다
+
+오라클 지드라 : 백업을 위해 나온 서버 , 백업을 관리하기 위한 DB
+Zero Data Loss Recovery Appliance = 여러 서버에 백업을 저 장비 하나로 관리, 
+다른 시스템은 OS에서도 받을 수 있는데 지드라는 오로지 디비(Oracle RDBMS)만 백업
+
+OCI 상에서 백업 = ZDLRA 사용 = RMAN 사용
+Physical : RMAN
+Logical -> Flash Back 유실하기 전 시점으로 돌려
+Recovery Analysis : Data Recovery Advisor -> 어떤 명령어를 사용해서 복구하라는 가이드
+Physical Data Protection : Active Data Guard -> 로컬 사이트에 인하우스 피지컬한 장애 일 때 인하우스 밖에 있는 DR 기동(only DB)
+
+tape = unused compression 동작 x - > 오라클 프로그램은 가능하기 때문에 외부 프로그램과 비교 했을 때 크기 차이가 날 수 있다.
+Encryption Backup : 백업셋에 암호화
+
+rman begin end backup
+OS 블록보다 DB 블록이 더 큼
+정합성이 깨짐 -> 시점이 일치하지 않기 때문에
+아카이브 로그가 해당 블록의 첫 번째 변경이 일어나는 redo log는 insert 가 있어야 하는데 아카이브에 보관
+블록 채로 아카이브에 저장
+안 맞는 정합성이 온전한 블록으로 다음 변경 구문은 구문채로 변경
+첫 번째 변경분만 블록 이미지로 가질 수 있음
+
+
+rman 은 왜 필요가 없는가? 복사할 때 rman에서 항상 8k 통째로 복사하도록 보증해주기 때문에 Begin 백업이 필요가 없음
+
+타겟 디비 = 백업 대상  , Aux 디비 = 임시 디비
+서버 세션 = RMAN tngod tptus
+option 밑에 채널 -> disk mml(media management Library=tape)
+일반 디스크 FRA(기간이 지난 애들은 자동으로 삭제
+
+백업 정보 보관 ( 1차, control file ) / 2차 ( Recovery Catalog Database -> 가급적 다른 서버, 여러 타겟의 백업 중앙에서 관리)
+RMAN repository -> 백업 했다는 기록 남기고 7일(default) 뒤 백업 정보만 사라짐
+
+컨트롤 파일 = 한정된 저장 용량, 복구 힘들어 다중화, 관리 요구 사항 매우 간단
+recovery catalog database : 백업 대상 database가 많은 경우, 백업 정보 장기간 보관, recovery catalog db(스크립트 저장 후 call)
+point in time tablespace recovery : 여러 시간대에 반복적으로 수행 가능
+current control file 존재 x = 자동 복구
+customized report 생성 가능, KEEP FOREVER = 영원히 보관, 주기 설정
+
+타겟디비와 동일한 디비에 생성 금지 -> 가급적 서버도 다른 서버 / 카탈로그 디비도 백업 필요 /
+resync overhead 존재(카탈로그와 백업 정보 동기화)
+
+Channel : 논리적으로 데이터 전송 스트림 구성 8~16정도 -> 너무 많이 주면 전체 i/o 다 쓰면  안돼 //
+Backup, copy, Restore, Recover 등 명령어는 적어도 하나의 채널을 필요로 함
+채널 수는 오퍼레이션 Parallelism 결젇, 채널별 다양한 제약이나 옵션 설정 가능
+
+rac 는 노드 별로 채널 따로 할당 가능
+나눠 돌리는 이유 = 서버에 cpu나 i/o 의 부하를 막기 위해 나눠서 돌림
+
+Backup Set = rman 전용 상태 -? > OS에 떨어지는 상태는 
+이미지 카피 는 os 1:1 copy
+
+이미지 카피 쓰는 이유 = restore 없이 서버를 빨리 기동하고 싶을 때 -> 완성된 데이터 파일 바로 mount해서 아카이브 오픈
+테이프 백업 지원을 안 하기 때문에 
+장애가 날 경우 경로만 바꿔주고 오픈하기 때문에 
+
+rman 백업 셋이 1차가 되면 안 되는 이유 : 용량이 너무 커서
+incremental backup : 과거로 돌아갈 수 없기 때문에 메인은 안 되는데 장애 시점으로 돌릴 수 없어서 이미지 카피는 메인 백업으로 못해
+메인셋은 사이즈가 작은 백업 셋으로 
