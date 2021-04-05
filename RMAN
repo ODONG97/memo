@@ -70,3 +70,69 @@ Backup Set = rman 전용 상태 -? > OS에 떨어지는 상태는
 rman 백업 셋이 1차가 되면 안 되는 이유 : 용량이 너무 커서
 incremental backup : 과거로 돌아갈 수 없기 때문에 메인은 안 되는데 장애 시점으로 돌릴 수 없어서 이미지 카피는 메인 백업으로 못해
 메인셋은 사이즈가 작은 백업 셋으로 
+recovery 전에 restore 절차가 필요함
+단 아카이브 로그 파일은 리커버리를 치면 자동으로 리커버리해서 리커버리 경로에다 아카이브 백업을 만들어줌
+
+백업 피스는 백업 셋의 물리적 단위
+
+이미지 카피 = OS에 1:1 카피 -> begin 필요 x = tape 백업 불가 = only os
+원본과 1:1 = null / unused block compression 지원 x
+restore 없이 database에 사용 가능
+
+retention policy -> 백업 보관 정책, 상호 배타적=1개만 선택 가능
+recovery window : 그 날짜에 어느 시점으로 라도 복구가 가능
+
+stand-alone type : 단일 명령어로 수행하면 채널 할당 빠짐
+
+job type : run 명령어에 순차적(절차적)으로 수행하도록, 상위 명령 실패시 하위 명령도 수행 x
+
+영구 설정(Persistent Setting for RMAN)
+컨트롤 파일에 저장, 레파지토리 디비에 저장
+ㄴ 자동 채널 구성, 백업 복사본, backup retention policy 지정
+컨트롤파일 오토백업 = ON으로 하는게 좋음
+ㄴ 백업 후에 컨트롤 파일 백업
+ㄴ 경로 지정 안 할 시 오라클 홈 밑에 dbs에 저장
+increption - 암호화
+advanced security option
+snapshot controlfile - rac ( shared disk ) : controlfile을 정지 시킬 수 업어서 백업 해놓고
+
+풀 백업 전략을 쓸 때? 매일 풀 백업을 받을 때 백업 시간과 백업 공간의 제약 덜 받음, DB가 작을 때
+
+Incremental Backup
+-> 전혀 사용하지 않은 블록을 제외한 블록을 모두 포함하는 레벨0
+->이전 백업을 수행한 이후 변경된 블록만 포함하는 레벨1
+큐믈레이티브 레벨1 :
+지드라 : 레벨0은 딱 한 번만 받으면 됨, 아카이브 백업은 따로 안 해도 됨
+가상의 풀 백업(지드라) = Index BackUp == 딱 한번 풀 백업 이후 Incremental 기용
+
+db 복제? 데이터베이스를 온라인에서 디비 복제
+백업 베이스 dup
+rman 노드 받은거를 타겟에 가져다 놓고
+
+active 운영중인 디비를 운영중에 복제
+데이터 가드 구성 할 때, 개발 디비 만들 때
+
+BCT
+시간 단축 -> BCT만 읽음 ->그러지 않으면 디비를 다 스캔해야 해서 i/o가 많이 발생하기 때문에 가장 최근 정보만 읽음
+-> Fast Incremental Backup 하기 위해서 필요해
+유지 관리 자동으로 되고, 운영중 enable 확인, rac인 경우 반드시 shared disk 에 둬야함 각 노드에 두는거 하지마
+bct 변경 구문 = alert 에 기록
+
+멀티 섹션 : 하나의 큰 파일을 각 채널에 잘라서 저장하는 기능
+maxopenfiles : 하나의 섹션에 들어가는 파일 개수 달라지게
+
+널 블록 compression : extent가 할당되지 않고 사용하지 않은 공간 = 백업에서 제외
+ㄴ 이미지 카피를 제외한 모든 백업에서 동작
+Binary compression : 백업된 블록들에 대한 추가적인 compression
+
+unused block compression : data가 없는 블록 = 백업에서 제외 = 공간이 더 줄어들어버려 = OSB 사용할 때 동작
+allocated + data 만 백업
+
+
+
+
+
+
+
+
+
