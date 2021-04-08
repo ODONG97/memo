@@ -1,0 +1,34 @@
+현재 스왑 용량 확인
+
+swapon -s
+
+현재 swap 메모리 확인
+
+free -m
+
+swap 파일 생성
+centos : sudo fallocate -l 10GB /swapfile
+REDHAT : sudo dd if=/dev/zero of=/myswap count=8192 bs=1M
+
+권한 설정
+chmod 600 /swapfile
+ls -lh /swapfile
+
+swap 포맷으로 변경
+mkswap /swapfile
+
+swap 파일 시스템 등록
+swapon /swapfile
+swapon -s
+free -h
+
+부팅시 등록
+vi /etc/fstab
+/swapfile   none    swap    sw    0 0
+
+[swqp 삭제]
+swap 연결 제거
+swapoff /swapfile
+
+swap 파일 삭제
+rm /swapfile
